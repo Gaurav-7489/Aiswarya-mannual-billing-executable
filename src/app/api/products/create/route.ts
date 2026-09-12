@@ -1,0 +1,23 @@
+import { NextResponse } from 'next/server'
+import { getDatabase } from '@/lib/db/client'
+
+export const runtime='nodejs'
+
+export async function POST(request:Request){
+ try{
+  const body=await request.json()
+  const name=String(body.name??'').trim()
+  const code=String(body.code??'').trim().toUpperCase()
+  const rate=Number(body.defaultRate??0)
+  const gst=Number(body.gstRate??0)
+  if(!name)return NextResponse.json({error:'Product name is required'},{status:400})
+  if(!code)return NextResponse.json({error:'Product code is required'},{status:400})
+  if(!Number.isFinite(rate)||rate<0)return NextResponse.json({error:'Enter a valid product rate'},{status:400})
+  if(!Number.isFinite(gst)||gst<0||gst>100)return NextResponse.json({error:'GST rate must be between 0% and 100%'},{status:400})
+  const db=getDatabase(); const id=crypto.randomUUID()
+  db.prepare(`INSERT INTO products(id,code,name,hsn_code,pack_size,unit,default_rate_minor,gst_rate_bps) VALUES(?,?,?,?,?,?,?,?)`).run(id,code,name,String(body.hsnCode??'').trim()||null,String(body.packSize??'').trim()||null,String(body.unit??'PCS').trim().toUpperCase(),Math.round(rate*100),Math.round(gst*100))
+  db.prepare(`INSERT INTO audit_logs(id,action,entity_type,entity_id,metadata_json) VALUES(?,?,?,?,?)`).run(crypto.randomUUID(),'CREATE','PRODUCT',id,JSON.stringify({code,name}))
+  const product=db.prepare(`SELECT id,code,name,hsn_code AS hsnCode,pack_size AS packSize,unit,default_rate_minor AS defaultRateMinor,gst_rate_bps AS gstRateBps FROM products WHERE id=?`).get(id)
+  return NextResponse.json({product},{status:201})
+ }catch(error){const message=error instanceof Error?error.message:'Unable to create product';return NextResponse.json({error:message.includes('UNIQUE')?'Product code already exists':message},{status:400})}
+}
