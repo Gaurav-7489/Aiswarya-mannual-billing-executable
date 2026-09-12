@@ -48,7 +48,7 @@ function decimalToScaledInteger(value: string, scale = 10000): bigint {
 
 function multiplyQuantityByRate(quantity: string, rateMinor: number): number {
   const quantityScaled = decimalToScaledInteger(quantity)
-  const result = (quantityScaled * BigInt(rateMinor)) / 10000n
+  const result = (quantityScaled * BigInt(rateMinor)) / BigInt(10000)
   return Number(result)
 }
 
