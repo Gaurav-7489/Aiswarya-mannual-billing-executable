@@ -1,0 +1,64 @@
+import { NextResponse } from 'next/server'
+import { getDatabase } from '@/lib/db/client'
+
+export const runtime = 'nodejs'
+
+type Params = { params: Promise<{ id: string }> }
+
+export async function GET(_: Request, { params }: Params) {
+  const { id } = await params
+  const db = getDatabase()
+  const customer = db.prepare(`
+    SELECT id, code, name, phone, email, gstin,
+      billing_address AS billingAddress, shipping_address AS shippingAddress,
+      state, state_code AS stateCode, city, pincode
+    FROM customers WHERE id = ? AND is_active = 1
+  `).get(id)
+
+  if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+
+  const history = db.prepare(`
+    SELECT i.id, i.invoice_number AS invoiceNumber, i.invoice_date AS invoiceDate,
+      i.status, i.grand_total_minor AS grandTotalMinor
+    FROM invoices i WHERE i.customer_id = ?
+    ORDER BY i.invoice_date DESC, i.created_at DESC LIMIT 100
+  `).all(id)
+
+  const summary = db.prepare(`
+    SELECT COUNT(*) AS invoiceCount,
+      COALESCE(SUM(CASE WHEN status = 'FINALIZED' THEN grand_total_minor ELSE 0 END), 0) AS totalSalesMinor,
+      MAX(CASE WHEN status = 'FINALIZED' THEN invoice_date END) AS lastPurchaseDate
+    FROM invoices WHERE customer_id = ?
+  `).get(id)
+
+  return NextResponse.json({ customer, summary, history })
+}
+
+export async function PATCH(request: Request, { params }: Params) {
+  const { id } = await params
+  const body = await request.json()
+  const db = getDatabase()
+  const existing = db.prepare('SELECT id FROM customers WHERE id = ? AND is_active = 1').get(id)
+  if (!existing) return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+
+  const allowed = ['name','phone','email','gstin','billingAddress','shippingAddress','state','stateCode','city','pincode'] as const
+  const values = allowed.map((key) => body[key] === undefined ? null : String(body[key]).trim())
+  const hasUpdate = allowed.some((key) => body[key] !== undefined)
+  if (!hasUpdate) return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+  if (body.name !== undefined && !String(body.name).trim()) return NextResponse.json({ error: 'Customer name is required' }, { status: 400 })
+
+  db.prepare(`
+    UPDATE customers SET
+      name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email), gstin = COALESCE(?, gstin),
+      billing_address = COALESCE(?, billing_address), shipping_address = COALESCE(?, shipping_address),
+      state = COALESCE(?, state), state_code = COALESCE(?, state_code), city = COALESCE(?, city),
+      pincode = COALESCE(?, pincode), updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(...values, id)
+
+  db.prepare(`INSERT INTO audit_logs (id, action, entity_type, entity_id, metadata_json) VALUES (?, ?, ?, ?, ?)`)
+    .run(crypto.randomUUID(), 'UPDATE', 'CUSTOMER', id, JSON.stringify({ fields: allowed.filter((key) => body[key] !== undefined) }))
+
+  const customer = db.prepare(`SELECT id, code, name, phone, email, gstin, billing_address AS billingAddress, shipping_address AS shippingAddress, state, state_code AS stateCode, city, pincode FROM customers WHERE id = ?`).get(id)
+  return NextResponse.json({ customer })
+}
