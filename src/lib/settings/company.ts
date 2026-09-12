@@ -4,6 +4,9 @@ export type CompanySettings = {
   name: string
   tagline: string
   address: string
+  businessDescription: string
+  productRange: string
+  workingHours: string
   gstin: string
   fssai: string
   phone: string
@@ -24,22 +27,25 @@ export type CompanySettings = {
 
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   name: 'Aiswarya Food Products',
-  tagline: 'QUALITY BISCUITS FOR A BRIGHTER TOMORROW',
-  address: 'Pazhookkara,\nChalakkudy,\nKerala 680731, India',
+  tagline: 'CRAFTED WITH PRECISION IN KERALA.',
+  address: 'Aiswarya Food Products\nPazookkara\nThrissur, Kerala 680731\nIndia',
+  businessDescription: 'A food manufacturer based in Pazookkara, Thrissur, Kerala. Specialising in quality biscuits, fried biscuits and bakery products, made with consistent quality and care.',
+  productRange: 'Biscuits\nFried Biscuits\nBakery Biscuits\nBakery Products',
+  workingHours: 'Monday – Saturday: 8:30 AM – 5:00 PM\nSunday: Closed',
   gstin: '',
   fssai: '',
   phone: '',
   email: '',
-  website: '',
+  website: 'https://aiswaryafoodproducts.com/',
   logoUrl: '',
   bankAccountName: '',
   bankName: '',
   bankAccountNumber: '',
   bankIfsc: '',
   bankBranch: '',
-  terms: '1. Goods once sold will not be taken back.\n2. Payment to be made within the due date.\n3. Interest will be charged on overdue amounts.\n4. Subject to Kerala jurisdiction only.',
+  terms: '',
   footerMessage: 'Thank you for your business.',
-  footerTagline: 'TOGETHER FOR A HEALTHIER TOMORROW',
+  footerTagline: 'FROM THE FACTORY FLOOR TO EVERYDAY.',
   authorizedSignatory: 'Authorized Signatory',
   defaultGstMode: 'INTRA',
 }
