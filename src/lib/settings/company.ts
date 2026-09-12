@@ -7,6 +7,12 @@ export type CompanySettings = {
   businessDescription: string
   productRange: string
   workingHours: string
+  processSummary: string
+  processDetails: string
+  locationLabel: string
+  googleRating: string
+  productLineCount: string
+  daysOpen: string
   gstin: string
   fssai: string
   phone: string
@@ -32,6 +38,12 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   businessDescription: 'A food manufacturer based in Pazookkara, Thrissur, Kerala. Specialising in quality biscuits, fried biscuits and bakery products, made with consistent quality and care.',
   productRange: 'Biscuits\nFried Biscuits\nBakery Biscuits\nBakery Products',
   workingHours: 'Monday – Saturday: 8:30 AM – 5:00 PM\nSunday: Closed',
+  processSummary: 'INGREDIENT → PRODUCTION → DELIVERY',
+  processDetails: 'SELECT: careful selection of quality ingredients.\nMAKE: mixing, shaping, baking and frying depending on the product.\nDELIVER: packaging and distribution to retailers and distributors across Thrissur and beyond.',
+  locationLabel: 'THRISSUR, KERALA',
+  googleRating: '5.0 / 5.0',
+  productLineCount: '3+',
+  daysOpen: '6',
   gstin: '',
   fssai: '',
   phone: '',
