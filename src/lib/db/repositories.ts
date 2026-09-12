@@ -25,6 +25,8 @@ export type Product = {
   active: boolean
 }
 
+type ProductRow = Omit<Product, 'active'> & { active: number }
+
 export function searchCustomers(term = ''): Customer[] {
   const q = `%${term.trim()}%`
   return getDatabase().prepare(`
@@ -45,8 +47,19 @@ export function searchProducts(term = ''): Product[] {
     FROM products
     WHERE is_active = 1 AND (name LIKE ? OR code LIKE ? OR hsn_code LIKE ?)
     ORDER BY name COLLATE NOCASE LIMIT 100
-  `).all(q, q, q) as Array<Product & { active: number }>
-  return rows.map((row) => ({ ...row, active: Boolean(row.active) }))
+  `).all(q, q, q) as ProductRow[]
+
+  return rows.map((row) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    hsn: row.hsn,
+    packSize: row.packSize,
+    unit: row.unit,
+    rateMinor: row.rateMinor,
+    gstRateBps: row.gstRateBps,
+    active: Boolean(row.active),
+  }))
 }
 
 export function getCustomer(id: string): Customer | undefined {
@@ -63,6 +76,19 @@ export function getProduct(id: string): Product | undefined {
     SELECT id, code, name, hsn_code AS hsn, pack_size AS packSize, unit,
       default_rate_minor AS rateMinor, gst_rate_bps AS gstRateBps, is_active AS active
     FROM products WHERE id = ?
-  `).get(id) as (Product & { active: number }) | undefined
-  return row ? { ...row, active: Boolean(row.active) } : undefined
+  `).get(id) as ProductRow | undefined
+
+  if (!row) return undefined
+
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    hsn: row.hsn,
+    packSize: row.packSize,
+    unit: row.unit,
+    rateMinor: row.rateMinor,
+    gstRateBps: row.gstRateBps,
+    active: Boolean(row.active),
+  }
 }
