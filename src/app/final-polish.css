@@ -1,0 +1,49 @@
+/* Final product polish: hierarchy, POS counter feel, touch targets and responsive behavior. */
+:root{--counter-green:#0f5f45;--counter-deep:#0a4735;--counter-cream:#fbfaf5;--counter-gold:#b88735}
+body{background:#f3f5f1!important}
+.app-nav{height:68px!important}
+.app-brand-mark{border-radius:12px!important}
+.nav-counter-button{box-shadow:0 8px 20px rgba(15,95,69,.14)!important}
+.dashboard-shell{padding-top:32px!important}
+.dashboard-header{padding:0!important}
+.dashboard-header .brand-orb{display:none!important}
+.dashboard-header .brand-lockup>div:last-child{padding-left:0!important}
+.dashboard-header h1{font-size:36px!important}
+.welcome-strip{background:linear-gradient(120deg,var(--counter-deep),var(--counter-green))!important;box-shadow:0 16px 34px rgba(15,95,69,.15)!important}
+.welcome-strip .section-kicker{color:#d9b86d!important}
+.metric-card.metric-accent,.metric-card.metric-accent .metric-top,.metric-card.metric-accent small{color:var(--ink)!important}
+.metric-card.metric-accent{background:#e7f2ec!important;border-color:#c9dfd3!important}
+.metric-card.metric-accent>strong{color:var(--counter-deep)!important}
+.quick-card,.metric-card,.panel{border-radius:16px!important}
+.quick-card{min-height:108px!important}
+.quick-icon{font-family:inherit!important}
+/* Counter is the core product workflow. */
+.invoice-workspace{background:#f3f5f1!important}
+.invoice-topbar{padding:2px 0!important}
+.invoice-topbar h1{font-size:34px!important}
+.invoice-grid{grid-template-columns:minmax(0,1fr) 350px!important;gap:18px!important}
+.invoice-main .invoice-card{border-radius:16px!important}
+.counter-customer{border-top:3px solid var(--counter-green)!important}
+.counter-products{padding-bottom:18px!important}
+.invoice-section-title>b{background:var(--counter-green)!important}
+.product-entry-row{background:#f7f9f6!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:12px!important}
+.counter-search label{margin-bottom:6px!important}
+.product-quick-add a,.product-quick-add button{min-height:42px!important}
+.counter-categories{padding:13px 0 9px!important}
+.product-shelf-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.shelf-tile{background:#fffefa!important;min-height:126px!important}
+.shelf-tile:hover:not(:disabled){background:#edf7f1!important;border-color:#9bc5ae!important}
+.basket-head{margin-top:20px!important}
+.invoice-table{background:#fffefa!important}
+.invoice-summary{border-top:3px solid var(--counter-green)!important;box-shadow:0 16px 40px rgba(23,37,31,.08)!important}
+.invoice-summary .grand{border-top:2px solid var(--counter-green)!important}
+.invoice-summary .grand strong{font-size:29px!important}
+.save-button{min-height:56px!important;font-size:15px!important;letter-spacing:.01em}
+.clear-button{min-height:44px!important}
+/* Make operational states visually distinct without noise. */
+.local-status.good{background:#e7f5ee!important;color:#176b4d!important}
+.draft-status.good{color:#176b4d!important}
+/* Touch-first and compact mobile counter. */
+@media(max-width:950px){.invoice-grid{grid-template-columns:1fr!important}.invoice-summary{position:static!important}.invoice-summary .grand strong{font-size:27px!important}.product-shelf-grid{grid-template-columns:repeat(3,1fr)!important}}
+@media(max-width:650px){.dashboard-header h1{font-size:30px!important}.dashboard-shell{padding-top:22px!important}.welcome-strip{border-radius:18px!important}.invoice-topbar h1{font-size:28px!important}.product-shelf-grid{grid-template-columns:repeat(2,1fr)!important}.product-entry-row{padding:10px!important}.invoice-summary{margin-top:0!important}.table-head,.table-row{min-width:760px!important}}
+@media(prefers-reduced-motion:reduce){.shelf-tile:hover:not(:disabled),.save-button:hover:not(:disabled){transform:none!important}}
