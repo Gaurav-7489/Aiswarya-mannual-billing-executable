@@ -22,6 +22,12 @@ Thumbs.db
 /storage/
 /backups/
 
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
 # IDE
 .vscode/
 .idea/
