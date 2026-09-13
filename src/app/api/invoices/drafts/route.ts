@@ -1,19 +1,5 @@
 import { NextResponse } from 'next/server'
 import { requireApiAuth } from '@/lib/auth/api'
-import { getDatabase } from '@/lib/db/client'
-
-export const runtime = 'nodejs'
-
-export async function GET() {
-  const guard = await requireApiAuth()
-  if (guard.response) return guard.response
-  const drafts = getDatabase().prepare(`
-    SELECT i.id, i.invoice_number AS invoiceNumber, i.invoice_date AS invoiceDate,
-      i.updated_at AS updatedAt, i.grand_total_minor AS grandTotalMinor,
-      c.id AS customerId, c.name AS customerName, c.code AS customerCode
-    FROM invoices i JOIN customers c ON c.id = i.customer_id
-    WHERE i.status = 'DRAFT'
-    ORDER BY i.updated_at DESC LIMIT 20
-  `).all()
-  return NextResponse.json({ drafts })
-}
+import { select } from '@/lib/db/client'
+export const runtime='nodejs'
+export async function GET(){const guard=await requireApiAuth();if(guard.response)return guard.response;const rows=await select<any>('invoices',`select=id,invoice_number,invoice_date,updated_at,grand_total_minor,customers(id,name,code)&status=eq.DRAFT&order=updated_at.desc&limit=20`);const drafts=rows.map(i=>({id:i.id,invoiceNumber:i.invoice_number,invoiceDate:i.invoice_date,updatedAt:i.updated_at,grandTotalMinor:Number(i.grand_total_minor),customerId:i.customers?.id,customerName:i.customers?.name,customerCode:i.customers?.code}));return NextResponse.json({drafts})}
