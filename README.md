@@ -21,7 +21,7 @@ Production billing and sales management software for Aiswarya Food Products.
 
 ## Business catalogue
 
-The product model is tailored to Aiswarya Food Products' biscuit business: Biscuits, Fried Biscuits, Bakery Biscuits and Bakery Products. The supplied company material describes the Pazookkara, Thrissur facility and these three primary biscuit/product lines. fileciteturn205file0L13-L19 fileciteturn205file0L25-L35
+The product model is tailored to Aiswarya Food Products' biscuit business: Biscuits, Fried Biscuits, Bakery Biscuits and Bakery Products. The supplied company material identifies the Pazookkara, Thrissur facility and these primary product lines.
 
 ## Supabase setup
 
