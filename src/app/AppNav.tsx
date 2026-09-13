@@ -10,12 +10,12 @@ const items = [
   { href:'/invoices', label:'Bills', short:'▤' },
   { href:'/customers', label:'Customers', short:'◎' },
   { href:'/products', label:'Products', short:'□' },
-  { href:'/warehouse', label:'Warehouse', short:'▥' },
+  { href:'/warehouse', label:'Stock', short:'▥' },
   { href:'/settings', label:'Settings', short:'⚙' },
 ]
 
 export default function AppNav(){
-  const pathname=usePathname();
+  const pathname=usePathname()
   const [open,setOpen]=useState(false)
   if(pathname==='/login') return null
   return <>
