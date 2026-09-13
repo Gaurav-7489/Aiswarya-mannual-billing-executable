@@ -1,49 +1,31 @@
-/* Final product polish: hierarchy, POS counter feel, touch targets and responsive behavior. */
-:root{--counter-green:#0f5f45;--counter-deep:#0a4735;--counter-cream:#fbfaf5;--counter-gold:#b88735}
-body{background:#f3f5f1!important}
-.app-nav{height:68px!important}
-.app-brand-mark{border-radius:12px!important}
-.nav-counter-button{box-shadow:0 8px 20px rgba(15,95,69,.14)!important}
-.dashboard-shell{padding-top:32px!important}
-.dashboard-header{padding:0!important}
-.dashboard-header .brand-orb{display:none!important}
-.dashboard-header .brand-lockup>div:last-child{padding-left:0!important}
-.dashboard-header h1{font-size:36px!important}
-.welcome-strip{background:linear-gradient(120deg,var(--counter-deep),var(--counter-green))!important;box-shadow:0 16px 34px rgba(15,95,69,.15)!important}
-.welcome-strip .section-kicker{color:#d9b86d!important}
-.metric-card.metric-accent,.metric-card.metric-accent .metric-top,.metric-card.metric-accent small{color:var(--ink)!important}
-.metric-card.metric-accent{background:#e7f2ec!important;border-color:#c9dfd3!important}
-.metric-card.metric-accent>strong{color:var(--counter-deep)!important}
-.quick-card,.metric-card,.panel{border-radius:16px!important}
-.quick-card{min-height:108px!important}
-.quick-icon{font-family:inherit!important}
-/* Counter is the core product workflow. */
-.invoice-workspace{background:#f3f5f1!important}
-.invoice-topbar{padding:2px 0!important}
-.invoice-topbar h1{font-size:34px!important}
-.invoice-grid{grid-template-columns:minmax(0,1fr) 350px!important;gap:18px!important}
-.invoice-main .invoice-card{border-radius:16px!important}
-.counter-customer{border-top:3px solid var(--counter-green)!important}
-.counter-products{padding-bottom:18px!important}
-.invoice-section-title>b{background:var(--counter-green)!important}
-.product-entry-row{background:#f7f9f6!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:12px!important}
-.counter-search label{margin-bottom:6px!important}
-.product-quick-add a,.product-quick-add button{min-height:42px!important}
-.counter-categories{padding:13px 0 9px!important}
-.product-shelf-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
-.shelf-tile{background:#fffefa!important;min-height:126px!important}
-.shelf-tile:hover:not(:disabled){background:#edf7f1!important;border-color:#9bc5ae!important}
-.basket-head{margin-top:20px!important}
-.invoice-table{background:#fffefa!important}
-.invoice-summary{border-top:3px solid var(--counter-green)!important;box-shadow:0 16px 40px rgba(23,37,31,.08)!important}
-.invoice-summary .grand{border-top:2px solid var(--counter-green)!important}
-.invoice-summary .grand strong{font-size:29px!important}
-.save-button{min-height:56px!important;font-size:15px!important;letter-spacing:.01em}
-.clear-button{min-height:44px!important}
-/* Make operational states visually distinct without noise. */
-.local-status.good{background:#e7f5ee!important;color:#176b4d!important}
-.draft-status.good{color:#176b4d!important}
-/* Touch-first and compact mobile counter. */
-@media(max-width:950px){.invoice-grid{grid-template-columns:1fr!important}.invoice-summary{position:static!important}.invoice-summary .grand strong{font-size:27px!important}.product-shelf-grid{grid-template-columns:repeat(3,1fr)!important}}
-@media(max-width:650px){.dashboard-header h1{font-size:30px!important}.dashboard-shell{padding-top:22px!important}.welcome-strip{border-radius:18px!important}.invoice-topbar h1{font-size:28px!important}.product-shelf-grid{grid-template-columns:repeat(2,1fr)!important}.product-entry-row{padding:10px!important}.invoice-summary{margin-top:0!important}.table-head,.table-row{min-width:760px!important}}
-@media(prefers-reduced-motion:reduce){.shelf-tile:hover:not(:disabled),.save-button:hover:not(:disabled){transform:none!important}}
+/* Aiswarya Billing — final product-wide UI system */
+:root{--counter-green:#0f5f45;--counter-deep:#0a4735;--counter-cream:#fbfaf5;--counter-gold:#b88735;--afp-green:#0f5f45;--afp-ink:#17251f;--afp-muted:#718078;--afp-card:#fffdf8;--afp-line:#dbe3dd;--afp-shadow:0 10px 30px rgba(23,37,31,.06)}
+body{background:#f3f5f1!important;color:#17251f!important}
+button,input,textarea,select{font-family:inherit!important}
+button,a,input,textarea,select{outline-offset:2px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(15,95,69,.22)!important}
+.app-nav{height:68px!important}.app-brand-mark{border-radius:12px!important}.nav-counter-button{box-shadow:0 8px 20px rgba(15,95,69,.14)!important}
+.dashboard-shell{padding-top:32px!important}.dashboard-header{padding:0!important}.dashboard-header .brand-orb{display:none!important}.dashboard-header .brand-lockup>div:last-child{padding-left:0!important}.dashboard-header h1{font-size:36px!important}
+.welcome-strip{background:linear-gradient(120deg,var(--counter-deep),var(--counter-green))!important;box-shadow:0 16px 34px rgba(15,95,69,.15)!important}.welcome-strip .section-kicker{color:#d9b86d!important}
+.metric-card.metric-accent,.metric-card.metric-accent .metric-top,.metric-card.metric-accent small{color:var(--ink)!important}.metric-card.metric-accent{background:#e7f2ec!important;border-color:#c9dfd3!important}.metric-card.metric-accent>strong{color:var(--counter-deep)!important}.quick-card,.metric-card,.panel{border-radius:16px!important}.quick-card{min-height:108px!important}.quick-icon{font-family:inherit!important}
+/* Counter */
+.invoice-workspace{background:#f3f5f1!important}.invoice-topbar{padding:2px 0!important}.invoice-topbar h1{font-size:34px!important}.invoice-grid{grid-template-columns:minmax(0,1fr) 350px!important;gap:18px!important}.invoice-main .invoice-card{border-radius:16px!important}.counter-customer{border-top:3px solid var(--counter-green)!important}.counter-products{padding-bottom:18px!important}.invoice-section-title>b{background:var(--counter-green)!important}.product-entry-row{background:#f7f9f6!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:12px!important}.counter-search label{margin-bottom:6px!important}.product-quick-add a,.product-quick-add button{min-height:42px!important}.counter-categories{padding:13px 0 9px!important}.product-shelf-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}.shelf-tile{background:#fffefa!important;min-height:126px!important}.shelf-tile:hover:not(:disabled){background:#edf7f1!important;border-color:#9bc5ae!important}.basket-head{margin-top:20px!important}.invoice-table{background:#fffefa!important}.invoice-summary{border-top:3px solid var(--counter-green)!important;box-shadow:0 16px 40px rgba(23,37,31,.08)!important}.invoice-summary .grand{border-top:2px solid var(--counter-green)!important}.invoice-summary .grand strong{font-size:29px!important}.save-button{min-height:56px!important;font-size:15px!important;letter-spacing:.01em}.clear-button{min-height:44px!important}.local-status.good{background:#e7f5ee!important;color:#176b4d!important}.draft-status.good{color:#176b4d!important}
+/* Shared operations pages */
+.customers-page,.products-page,.warehouse-page,.settings-page,.history-page{background:#f3f5f1!important;color:var(--afp-ink)!important;max-width:1280px!important;padding-left:24px!important;padding-right:24px!important}
+.customers-header,.products-header,.warehouse-hero,.settings-header,.history-header{margin-bottom:22px!important}.customers-header h1,.products-header h1,.warehouse-hero h1,.settings-header h1,.history-header h1{color:var(--afp-ink)!important;letter-spacing:-.035em!important}.customers-header small,.products-header small,.warehouse-hero small,.settings-header .eyebrow,.history-header small{color:var(--counter-green)!important;letter-spacing:.12em!important}
+.customer-list-card,.customer-detail,.product-list-card,.product-detail,.warehouse-card,.warehouse-stat,.settings-card,.history-card{background:var(--afp-card)!important;border:1px solid var(--afp-line)!important;box-shadow:none!important;border-radius:18px!important}
+.primary,.save,.product-search button,.customer-search button,.warehouse-search button,.warehouse-hero-actions a:first-child,.save-bar button,.new-invoice,.history-search button{background:var(--counter-green)!important;border-color:var(--counter-green)!important;color:#fff!important;box-shadow:0 8px 20px rgba(15,95,69,.12)!important}
+.secondary,.close,.product-form-actions a,.warehouse-hero-actions a:not(:first-child),.secondary-button{background:var(--afp-card)!important;border:1px solid var(--afp-line)!important;color:var(--afp-ink)!important}
+.customer-search input,.customer-form input,.customer-form textarea,.product-search input,.product-form input,.product-form select,.settings-grid input,.settings-grid textarea,.settings-grid select,.history-search input,.warehouse-search input{border-color:var(--afp-line)!important;background:#fff!important;border-radius:11px!important;min-height:46px}
+.customer-search input:focus,.customer-form input:focus,.customer-form textarea:focus,.product-search input:focus,.product-form input:focus,.product-form select:focus,.settings-grid input:focus,.settings-grid textarea:focus,.settings-grid select:focus,.history-search input:focus,.warehouse-search input:focus{border-color:var(--counter-green)!important;box-shadow:0 0 0 3px rgba(15,95,69,.10)!important}
+.customer-item,.product-item{background:transparent!important;border-top-color:#edf1ee!important}.customer-item:hover,.product-item:hover{background:#f7faf7!important}.customer-item.active,.product-item.active{background:#e9f4ee!important;color:var(--counter-deep)!important}.customer-item small,.product-item small,.customers-header p,.products-header p,.warehouse-hero p,.settings-header p,.history-header p{color:var(--afp-muted)!important}
+.customer-stats article{background:#f7faf7!important;border-color:var(--afp-line)!important;border-radius:14px!important}.customer-stats strong{color:var(--counter-deep)!important}.history-row{border-top-color:#edf1ee!important}.history-row:hover{background:#f7faf7!important}.history-card{padding:18px!important}.history-head{color:var(--afp-muted)!important}
+.product-row-stock,.stock-badge{background:#e7f4ec!important;color:var(--counter-green)!important}.stock-badge.low{background:#fff4df!important;color:#8a641d!important}.stock-badge.out{background:#fff0ed!important;color:#a63a32!important}.product-detail,.customer-detail{min-height:600px!important}.form-title h2{letter-spacing:-.025em!important}.form-note,.hint{background:#f5f8f5!important;border-color:var(--afp-line)!important;color:var(--afp-muted)!important}.photo-section{background:#f6f9f6!important;border-color:var(--afp-line)!important}.photo-preview{box-shadow:inset 0 0 0 1px var(--afp-line)!important}
+.warehouse-stat strong{color:var(--counter-deep)!important}.warehouse-card-head{background:rgba(247,250,247,.72)!important}.shelf-product:hover{background:#f1f7f3!important}.shelf-icon{background:#e9f4ee!important;color:var(--counter-green)!important}.adjust-link{background:#eef6f1!important;color:var(--counter-green)!important;border-color:#c9dfd3!important}.warehouse-note{background:#f4f8f4!important}.stock-overlay{background:rgba(10,71,53,.48)!important}.stock-modal{background:var(--afp-card)!important;border-color:var(--afp-line)!important}
+.settings-card h2{color:var(--afp-ink)!important}.security-card{border-color:#c9dfd3!important;background:#f8fcf9!important}.save-bar{background:rgba(255,253,248,.92)!important;border-color:var(--afp-line)!important}.save-bar button{min-height:48px!important}.settings-page form>section{margin-bottom:14px!important}
+.auth-page{background:radial-gradient(circle at 20% 10%,#e9f4ee 0,#f4f6f2 48%,#e8eeea 100%)!important}.auth-card{background:var(--afp-card)!important;border:1px solid var(--afp-line)!important;border-radius:22px!important;box-shadow:0 24px 70px rgba(23,60,48,.10)!important}.auth-mark{background:#e7f3ed!important;color:var(--counter-green)!important}.auth-eyebrow{color:var(--counter-green)!important}.auth-card input{border-color:var(--afp-line)!important;border-radius:11px!important}.auth-card input:focus{border-color:var(--counter-green)!important;box-shadow:0 0 0 4px rgba(15,95,69,.11)!important}.auth-card button{background:var(--counter-green)!important}.auth-card button:hover{background:var(--counter-deep)!important}
+.error-banner,.customer-error,.product-error,.warehouse-error,.auth-error{border-radius:11px!important}.error-banner,.customer-error,.product-error,.warehouse-error{background:#fff3f0!important;border-color:#efc4be!important;color:#8d3129!important}
+.mobile-bottom-nav{background:rgba(255,253,248,.97)!important;border-top:1px solid var(--afp-line)!important}.mobile-bottom-nav a.active{color:var(--counter-green)!important}
+@media(max-width:950px){.invoice-grid{grid-template-columns:1fr!important}.invoice-summary{position:static!important}.product-shelf-grid{grid-template-columns:repeat(3,1fr)!important}.customer-layout,.product-layout{grid-template-columns:1fr!important}.warehouse-layout{grid-template-columns:1fr!important}.warehouse-grid{grid-template-columns:repeat(2,1fr)!important}.settings-page,.customers-page,.products-page,.warehouse-page,.history-page{padding-top:24px!important}}
+@media(max-width:650px){.dashboard-header h1{font-size:30px!important}.dashboard-shell{padding-top:22px!important}.welcome-strip{border-radius:18px!important}.invoice-topbar h1{font-size:28px!important}.product-shelf-grid{grid-template-columns:repeat(2,1fr)!important}.product-entry-row{padding:10px!important}.table-head,.table-row{min-width:760px!important}.customers-page,.products-page,.warehouse-page,.settings-page,.history-page{padding:18px 12px 84px!important}.customers-header h1,.products-header h1,.warehouse-hero h1,.history-header h1{font-size:29px!important}.customer-detail,.product-detail{padding:17px!important}.customer-actions,.product-actions,.warehouse-hero-actions{grid-template-columns:1fr!important}.warehouse-grid{grid-template-columns:1fr 1fr!important}.settings-card{padding:19px!important}.save-bar{bottom:8px!important}.history-search{gap:8px!important}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.shelf-tile:hover:not(:disabled),.save-button:hover:not(:disabled),.quick-card:hover{transform:none!important}}
