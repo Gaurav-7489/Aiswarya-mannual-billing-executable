@@ -1,5 +1,19 @@
 import { NextResponse } from 'next/server'
 import { requireApiAuth } from '@/lib/auth/api'
-import { select } from '@/lib/db/client'
-export const runtime='nodejs'
-export async function GET(){const guard=await requireApiAuth();if(guard.response)return guard.response;const today=new Date().toISOString().slice(0,10);const [todayInvoices,drafts,cancelled,customers,products,failed,recent,allFinalized]=await Promise.all([select<any>('invoices',`select=grand_total_minor,status&invoice_date=eq.${today}&limit=5000`),select<any>('invoices','select=id&status=eq.DRAFT&limit=5000'),select<any>('invoices','select=id&status=eq.CANCELLED&limit=5000'),select<any>('customers','select=id&is_active=eq.true&limit=5000'),select<any>('products','select=id&is_active=eq.true&limit=5000'),select<any>('notifications','select=id&status=eq.FAILED&limit=5000'),select<any>('invoices','select=id,invoice_number,invoice_date,status,grand_total_minor,created_at,customers(name)&order=invoice_date.desc,created_at.desc&limit=8'),select<any>('invoices','select=customer_id,grand_total_minor,customers(id,name,code)&status=eq.FINALIZED&limit=10000')]);const finalizedToday=todayInvoices.filter(i=>i.status==='FINALIZED');const byCustomer=new Map<string,any>();for(const i of allFinalized){const c=i.customers;if(!c)continue;const x=byCustomer.get(i.customer_id)||{id:c.id,name:c.name,code:c.code,invoiceCount:0,totalSalesMinor:0};x.invoiceCount++;x.totalSalesMinor+=Number(i.grand_total_minor||0);byCustomer.set(i.customer_id,x)}const topCustomers=[...byCustomer.values()].sort((a,b)=>b.totalSalesMinor-a.totalSalesMinor||b.invoiceCount-a.invoiceCount).slice(0,5);return NextResponse.json({today,summary:{todaySalesMinor:finalizedToday.reduce((s,i)=>s+Number(i.grand_total_minor||0),0),todayInvoiceCount:finalizedToday.length,draftCount:drafts.length,cancelledCount:cancelled.length},counts:{customerCount:customers.length,productCount:products.length,failedNotificationCount:failed.length},recentInvoices:recent.map(i=>({id:i.id,invoiceNumber:i.invoice_number,invoiceDate:i.invoice_date,status:i.status,grandTotalMinor:Number(i.grand_total_minor),customerName:i.customers?.name??''})),topCustomers})}
+import { rpc } from '@/lib/db/client'
+
+export const runtime = 'nodejs'
+
+export async function GET() {
+  const guard = await requireApiAuth()
+  if (guard.response) return guard.response
+
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const data = await rpc<Record<string, unknown>>('dashboard_summary', { p_today: today })
+    return NextResponse.json(data)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load dashboard'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
