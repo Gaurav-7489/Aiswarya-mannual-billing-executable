@@ -1,94 +1,22 @@
-import { getDatabase } from './client'
+import { select, selectOne } from './client'
 
-export type Customer = {
-  id: string
-  code: string
-  name: string
-  phone: string | null
-  email: string | null
-  gstin: string | null
-  billingAddress: string | null
-  shippingAddress: string | null
-  state: string | null
-  city: string | null
+export type Customer = { id:string; code:string; name:string; phone:string|null; email:string|null; gstin:string|null; billingAddress:string|null; shippingAddress:string|null; state:string|null; city:string|null; stateCode?:string|null; pincode?:string|null }
+export type Product = { id:string; code:string; name:string; hsn:string|null; packSize:string|null; unit:string; rateMinor:number; gstRateBps:number; active:boolean }
+
+type Row = Record<string, unknown>
+const customerSelect='id,code,name,phone,email,gstin,billing_address,shipping_address,state,state_code,city,pincode'
+
+export async function searchCustomers(term=''): Promise<Customer[]> {
+  const q=term.trim(); const search=q?`&or=(name.ilike.*${encodeURIComponent(q)}*,code.ilike.*${encodeURIComponent(q)}*,phone.ilike.*${encodeURIComponent(q)}*,gstin.ilike.*${encodeURIComponent(q)}*,city.ilike.*${encodeURIComponent(q)}*)`:''
+  const rows=await select<Row>('customers',`select=${customerSelect}&is_active=eq.true&order=name.asc&limit=50${search}`)
+  return rows.map(mapCustomer)
 }
-
-export type Product = {
-  id: string
-  code: string
-  name: string
-  hsn: string | null
-  packSize: string | null
-  unit: string
-  rateMinor: number
-  gstRateBps: number
-  active: boolean
+export async function searchProducts(term=''): Promise<Product[]> {
+  const q=term.trim(); const search=q?`&or=(name.ilike.*${encodeURIComponent(q)}*,code.ilike.*${encodeURIComponent(q)}*,hsn_code.ilike.*${encodeURIComponent(q)}*)`:''
+  const rows=await select<Row>('products',`select=id,code,name,hsn_code,pack_size,unit,default_rate_minor,gst_rate_bps,is_active&is_active=eq.true&order=name.asc&limit=100${search}`)
+  return rows.map(mapProduct)
 }
-
-type ProductRow = Omit<Product, 'active'> & { active: number }
-
-export function searchCustomers(term = ''): Customer[] {
-  const q = `%${term.trim()}%`
-  return getDatabase().prepare(`
-    SELECT id, code, name, phone, email, gstin,
-      billing_address AS billingAddress,
-      shipping_address AS shippingAddress, state, city
-    FROM customers
-    WHERE is_active = 1 AND (name LIKE ? OR code LIKE ? OR phone LIKE ? OR gstin LIKE ? OR city LIKE ?)
-    ORDER BY name COLLATE NOCASE LIMIT 50
-  `).all(q, q, q, q, q) as Customer[]
-}
-
-export function searchProducts(term = ''): Product[] {
-  const q = `%${term.trim()}%`
-  const rows = getDatabase().prepare(`
-    SELECT id, code, name, hsn_code AS hsn, pack_size AS packSize, unit,
-      default_rate_minor AS rateMinor, gst_rate_bps AS gstRateBps, is_active AS active
-    FROM products
-    WHERE is_active = 1 AND (name LIKE ? OR code LIKE ? OR hsn_code LIKE ?)
-    ORDER BY name COLLATE NOCASE LIMIT 100
-  `).all(q, q, q) as ProductRow[]
-
-  return rows.map((row) => ({
-    id: row.id,
-    code: row.code,
-    name: row.name,
-    hsn: row.hsn,
-    packSize: row.packSize,
-    unit: row.unit,
-    rateMinor: row.rateMinor,
-    gstRateBps: row.gstRateBps,
-    active: Boolean(row.active),
-  }))
-}
-
-export function getCustomer(id: string): Customer | undefined {
-  return getDatabase().prepare(`
-    SELECT id, code, name, phone, email, gstin,
-      billing_address AS billingAddress,
-      shipping_address AS shippingAddress, state, city
-    FROM customers WHERE id = ? AND is_active = 1
-  `).get(id) as Customer | undefined
-}
-
-export function getProduct(id: string): Product | undefined {
-  const row = getDatabase().prepare(`
-    SELECT id, code, name, hsn_code AS hsn, pack_size AS packSize, unit,
-      default_rate_minor AS rateMinor, gst_rate_bps AS gstRateBps, is_active AS active
-    FROM products WHERE id = ?
-  `).get(id) as ProductRow | undefined
-
-  if (!row) return undefined
-
-  return {
-    id: row.id,
-    code: row.code,
-    name: row.name,
-    hsn: row.hsn,
-    packSize: row.packSize,
-    unit: row.unit,
-    rateMinor: row.rateMinor,
-    gstRateBps: row.gstRateBps,
-    active: Boolean(row.active),
-  }
-}
+export async function getCustomer(id:string){const row=await selectOne<Row>('customers',`select=${customerSelect}&id=eq.${encodeURIComponent(id)}&is_active=eq.true`);return row?mapCustomer(row):undefined}
+export async function getProduct(id:string){const row=await selectOne<Row>('products',`select=id,code,name,hsn_code,pack_size,unit,default_rate_minor,gst_rate_bps,is_active&id=eq.${encodeURIComponent(id)}`);return row?mapProduct(row):undefined}
+function mapCustomer(r:Row):Customer{return{id:String(r.id),code:String(r.code),name:String(r.name),phone:r.phone as string|null,email:r.email as string|null,gstin:r.gstin as string|null,billingAddress:r.billing_address as string|null,shippingAddress:r.shipping_address as string|null,state:r.state as string|null,city:r.city as string|null,stateCode:r.state_code as string|null,pincode:r.pincode as string|null}}
+function mapProduct(r:Row):Product{return{id:String(r.id),code:String(r.code),name:String(r.name),hsn:r.hsn_code as string|null,packSize:r.pack_size as string|null,unit:String(r.unit),rateMinor:Number(r.default_rate_minor||0),gstRateBps:Number(r.gst_rate_bps||0),active:Boolean(r.is_active)}}
