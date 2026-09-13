@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import './production-ui.css'
+import './elder-friendly-ui.css'
 import AuthGate from './AuthGate'
 import ConnectionStatus from './ConnectionStatus'
 import AppNav from './AppNav'
