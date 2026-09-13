@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-type CreatedProduct={id:string;name:string;code:string;packSize:string|null;unit:string;rateMinor:number;gstRateBps:number;hsnCode:string|null}
+type CreatedProduct={id:string;name:string;code:string;category:string;packSize:string|null;unit:string;rateMinor:number;gstRateBps:number;hsnCode:string|null}
 
 type Props={onCreated:(product:CreatedProduct)=>void;onClose:()=>void}
 
@@ -17,7 +17,7 @@ export default function QuickProductModal({onCreated,onClose}:Props){
       const body=await response.json()
       if(!response.ok||!body.product)throw new Error(body.error||'Unable to create product.')
       const p=body.product
-      onCreated({id:String(p.id),name:String(p.name),code:String(p.code),packSize:p.pack_size?String(p.pack_size):null,unit:String(p.unit),rateMinor:Number(p.default_rate_minor),gstRateBps:Number(p.gst_rate_bps),hsnCode:p.hsn_code?String(p.hsn_code):null})
+      onCreated({id:String(p.id),name:String(p.name),code:String(p.code),category:String(p.category||'Other'),packSize:p.pack_size?String(p.pack_size):null,unit:String(p.unit),rateMinor:Number(p.default_rate_minor),gstRateBps:Number(p.gst_rate_bps),hsnCode:p.hsn_code?String(p.hsn_code):null})
     }catch(err){setError(err instanceof Error?err.message:'Unable to create product.')}finally{setSaving(false)}
   }
   return <div className="quick-product-overlay" role="dialog" aria-modal="true" aria-labelledby="quick-product-title" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
