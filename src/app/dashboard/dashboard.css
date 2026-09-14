@@ -1,13 +1,10 @@
-/* Dashboard-specific layout. Visual tokens live in modern-premium.css. */
 .dashboard-shell{min-height:calc(100vh - 72px)}
 .dashboard-header{margin-bottom:24px}
 .dashboard-header h1{color:var(--ink)!important}
-.metric-card.metric-accent{background:var(--brand-soft)!important;color:var(--ink)!important;border-color:#cfe5d9!important}
-.metric-card.metric-accent .metric-top{color:var(--muted)!important}
-.metric-card.metric-accent>strong{color:var(--brand-strong)!important}
-.metric-card.metric-accent small{color:var(--muted)!important}
-.quick-card{min-height:116px}
-.workspace-counter{box-shadow:0 10px 24px rgba(23,107,77,.13)!important}
+.metric-card.metric-accent{background:var(--deep)!important;color:#fff!important;border-color:#12345a!important}
+.metric-card.metric-accent .metric-top{color:#b9cbe0!important}
+.metric-card.metric-accent>strong{color:var(--sky)!important}
+.metric-card.metric-accent small{color:#b9cbe0!important}
 .panel{min-height:100%}
-@media(max-width:950px){.dashboard-header{padding:0}.metric-grid{grid-template-columns:repeat(2,1fr)!important}.quick-grid{grid-template-columns:repeat(2,1fr)!important}.dashboard-columns{grid-template-columns:1fr!important}}
-@media(max-width:560px){.metric-grid,.quick-grid{grid-template-columns:1fr 1fr!important}.quick-card{min-height:104px}.dashboard-header{padding:0}.metric-card{min-height:116px}}
+@media(max-width:950px){.dashboard-header{padding:0}.metric-grid{grid-template-columns:repeat(2,1fr)!important}.dashboard-columns{grid-template-columns:1fr!important}}
+@media(max-width:560px){.metric-grid{grid-template-columns:1fr 1fr!important}.dashboard-header{padding:0}.metric-card{min-height:116px}}
