@@ -36,7 +36,7 @@ export default function AppNav(){
   const[open,setOpen]=useState(false)
   if(pathname==='/login')return null
   const active=(href:string)=>pathname===href||pathname.startsWith(`${href}/`)
-  const mobilePrimary=items.slice(0,4)
+  const mobilePrimary=[items[0],items[2],items[1],items[3]]
   const mobileMore=items.slice(4)
 
   return <>
@@ -49,13 +49,17 @@ export default function AppNav(){
       <Link href="/dashboard" className="app-brand"><span className="app-brand-mark">A</span><span><strong>Aiswarya</strong><small>FOOD PRODUCTS</small></span></Link>
     </header>
 
-    {open&&<div className="mobile-nav-panel" role="dialog" aria-label="More navigation">
-      <div className="mobile-nav-panel-head"><strong>More</strong><button type="button" onClick={()=>setOpen(false)} aria-label="Close more navigation">×</button></div>
-      <div className="mobile-nav-grid">{mobileMore.map(item=><Link key={item.href} href={item.href} className={active(item.href)?'active':''} onClick={()=>setOpen(false)}><Icon name={item.icon}/><strong>{item.label}</strong></Link>)}</div>
-    </div>}
+    {open&&<>
+      <button className="mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={()=>setOpen(false)}/>
+      <section className="mobile-nav-panel" role="dialog" aria-label="More navigation">
+        <div className="mobile-nav-handle"/>
+        <div className="mobile-nav-panel-head"><div><strong>More</strong><small>Products, stock and settings</small></div><button type="button" onClick={()=>setOpen(false)} aria-label="Close more navigation">×</button></div>
+        <div className="mobile-nav-grid">{mobileMore.map(item=><Link key={item.href} href={item.href} className={active(item.href)?'active':''} onClick={()=>setOpen(false)}><Icon name={item.icon}/><strong>{item.label}</strong><small>{item.href==='/products'?'Catalogue':item.href==='/warehouse'?'Inventory':'App controls'}</small></Link>)}</div>
+      </section>
+    </>}
 
     <nav className="mobile-bottom-nav" aria-label="Primary navigation">
-      {mobilePrimary.map(item=><Link key={item.href} href={item.href} className={active(item.href)?'active':''}><Icon name={item.icon}/><small>{item.label}</small></Link>)}
+      {mobilePrimary.map(item=><Link key={item.href} href={item.href} className={`${active(item.href)?'active ':''}${item.primary?'primary':''}`}><Icon name={item.icon}/><small>{item.label==='Dashboard'?'Home':item.label}</small></Link>)}
       <button type="button" className={`mobile-more-trigger ${open?'active':''}`} onClick={()=>setOpen(v=>!v)} aria-expanded={open} aria-label="More navigation"><Icon name="more"/><small>More</small></button>
     </nav>
   </>
