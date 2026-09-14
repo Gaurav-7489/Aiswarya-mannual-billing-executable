@@ -6,28 +6,228 @@ import QuickProductModal from './QuickProductModal'
 import ReceiptCompletion from './ReceiptCompletion'
 import './invoice.css'
 
-type Customer={id:string;name:string;code:string;phone:string|null;city:string|null;gstin:string|null;photoUrl?:string|null}
-type Product={id:string;name:string;code:string;category:string;packSize:string|null;rateMinor:number;unit:string;gstRateBps:number;hsnCode:string|null;imageUrl?:string|null}
-type LineItem=Product & {qty:number}
-type Completion={id:string;invoiceNumber:string;customerName:string;units:number;totalMinor:number}
-const money=(minor:number)=>`₹${(minor/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`
+type Customer = { id: string; name: string; code: string; phone: string | null; city: string | null; gstin: string | null; photoUrl?: string | null }
+type Product = { id: string; name: string; code: string; category: string; packSize: string | null; rateMinor: number; unit: string; gstRateBps: number; hsnCode: string | null; imageUrl?: string | null }
+type LineItem = Product & { qty: number }
+type Completion = { id: string; invoiceNumber: string; customerName: string; units: number; totalMinor: number }
 
-export default function InvoiceWorkspace(){
- const [online,setOnline]=useState(true),[customerQuery,setCustomerQuery]=useState(''),[selectedCustomer,setSelectedCustomer]=useState<Customer|null>(null),[productQuery,setProductQuery]=useState(''),[items,setItems]=useState<LineItem[]>([]),[discount,setDiscount]=useState(0),[customerResults,setCustomerResults]=useState<Customer[]>([]),[productResults,setProductResults]=useState<Product[]>([]),[catalogue,setCatalogue]=useState<Product[]>([]),[category,setCategory]=useState('All'),[loadingCustomers,setLoadingCustomers]=useState(false),[loadingProducts,setLoadingProducts]=useState(false),[saving,setSaving]=useState(false),[finalizing,setFinalizing]=useState(false),[draftId,setDraftId]=useState<string|null>(null),[draftStatus,setDraftStatus]=useState(''),[savedInvoice,setSavedInvoice]=useState<string|null>(null),[completion,setCompletion]=useState<Completion|null>(null),[error,setError]=useState<string|null>(null),[showQuickProduct,setShowQuickProduct]=useState(false)
- useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();window.addEventListener('online',sync);window.addEventListener('offline',sync);return()=>{window.removeEventListener('online',sync);window.removeEventListener('offline',sync)}},[])
- useEffect(()=>{if(!online)return;fetch('/api/products',{cache:'no-store'}).then(r=>r.json()).then(d=>setCatalogue(d.products??[])).catch(()=>{})},[online])
- useEffect(()=>{let cancelled=false;async function restoreCloudDraft(){if(!navigator.onLine)return;try{const response=await fetch('/api/invoices/drafts',{cache:'no-store'});const data=await response.json();const latest=data.drafts?.[0];if(!cancelled&&latest?.id){const detailResponse=await fetch(`/api/invoices/${latest.id}`,{cache:'no-store'});const detail=await detailResponse.json();if(detail.ok&&detail.invoice?.status==='DRAFT'){const customer:Customer={id:String(detail.invoice.customer_id),name:String(detail.invoice.customer_name),code:String(detail.invoice.customer_code),phone:detail.invoice.customer_phone??null,city:detail.invoice.customer_city??null,gstin:detail.invoice.customer_gstin??null};const restoredItems:LineItem[]=(detail.items??[]).map((item:Record<string,unknown>)=>({id:String(item.product_id??item.id),name:String(item.product_name),code:String(item.product_code),category:'',packSize:item.pack_size?String(item.pack_size):null,unit:String(item.unit),rateMinor:Number(item.rate_minor),gstRateBps:Number(item.gst_rate_bps),hsnCode:item.hsn_code?String(item.hsn_code):null,qty:Number(item.quantity)}));setSelectedCustomer(customer);setItems(restoredItems);setDiscount(Number(detail.invoice.discount_minor??0)/100);setDraftId(latest.id);setDraftStatus('Cloud draft loaded')}}}catch{if(!cancelled)setDraftStatus('Ready')}}void restoreCloudDraft();return()=>{cancelled=true}},[])
- useEffect(()=>{if(!customerQuery.trim()||!online){setCustomerResults([]);return}const timer=window.setTimeout(async()=>{setLoadingCustomers(true);try{const response=await fetch(`/api/customers?q=${encodeURIComponent(customerQuery)}`);const data=await response.json();setCustomerResults(data.customers??[])}catch{setError('Could not load customers. Check the connection.')}finally{setLoadingCustomers(false)}},180);return()=>window.clearTimeout(timer)},[customerQuery,online])
- useEffect(()=>{if(!productQuery.trim()||!online){setProductResults([]);return}const timer=window.setTimeout(async()=>{setLoadingProducts(true);try{const response=await fetch(`/api/products?q=${encodeURIComponent(productQuery)}`);const data=await response.json();setProductResults(data.products??[])}catch{setError('Could not load products. Check the connection.')}finally{setLoadingProducts(false)}},180);return()=>window.clearTimeout(timer)},[productQuery,online])
- const categories=useMemo(()=>['All',...Array.from(new Set(catalogue.map(p=>p.category).filter(Boolean)))],[catalogue]);const shelfProducts=useMemo(()=>catalogue.filter(p=>category==='All'||p.category===category).slice(0,24),[catalogue,category])
- const subtotal=useMemo(()=>items.reduce((sum,item)=>sum+item.rateMinor*item.qty,0),[items]);const discountMinor=Math.round(Math.max(0,discount)*100);const taxable=Math.max(0,subtotal-Math.min(subtotal,discountMinor));const estimatedTax=useMemo(()=>{if(!items.length||taxable<=0)return 0;const baseSubtotal=Math.max(1,subtotal);return Math.round(items.reduce((sum,item)=>sum+Math.max(0,item.rateMinor*item.qty-Math.round(discountMinor*(item.rateMinor*item.qty)/baseSubtotal))*item.gstRateBps/10000,0))},[items,subtotal,taxable,discountMinor]);const estimatedGrandTotal=taxable+estimatedTax
- useEffect(()=>{if(!selectedCustomer||items.length===0||savedInvoice||completion||!online||saving||finalizing)return;const timer=window.setTimeout(()=>{void autosaveDraft()},900);setDraftStatus('Unsaved changes');return()=>window.clearTimeout(timer)},[selectedCustomer,items,discount,online,savedInvoice,completion])
- async function autosaveDraft(){if(!online||!selectedCustomer||items.length===0||saving||finalizing)return;setSaving(true);setDraftStatus('Saving draft…');setError(null);try{const response=await fetch('/api/invoices/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:draftId??undefined,customerId:selectedCustomer.id,items:items.map(item=>({productId:item.id,quantity:item.qty,rateMinor:item.rateMinor})),discountMinor,gstMode:'INTRA'})});const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Unable to save draft.');setDraftId(data.draft.id);setDraftStatus('Draft saved to cloud')}catch(err){setDraftStatus('Draft not saved');setError(err instanceof Error?err.message:'Unable to save draft.')}finally{setSaving(false)}}
- const addItem=(product:Product)=>{setItems(current=>current.some(item=>item.id===product.id)?current.map(item=>item.id===product.id?{...item,qty:item.qty+1}:item):[...current,{...product,qty:1}]);setProductQuery('');setSavedInvoice(null);setError(null)};const updateQuantity=(id:string,value:string)=>{setItems(current=>current.map(item=>item.id===id?{...item,qty:Math.max(1,Number(value)||1)}:item));setSavedInvoice(null)};const removeItem=(id:string)=>{setItems(current=>current.filter(item=>item.id!==id));setSavedInvoice(null)};const clearInvoice=()=>{setSelectedCustomer(null);setCustomerQuery('');setProductQuery('');setItems([]);setDiscount(0);setDraftId(null);setSavedInvoice(null);setCompletion(null);setDraftStatus('');setError(null)};const addCreatedProduct=(product:Product)=>{addItem(product);setShowQuickProduct(false);setDraftStatus('Product created and added')}
- const finalize=async()=>{if(!online){setError('Internet connection is required to finalize an invoice.');setDraftStatus('Billing unavailable');return}if(!selectedCustomer||items.length===0||finalizing)return;setFinalizing(true);setError(null);setDraftStatus('Finalizing…');try{let id=draftId;if(!id){const response=await fetch('/api/invoices/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:selectedCustomer.id,items:items.map(item=>({productId:item.id,quantity:item.qty,rateMinor:item.rateMinor})),discountMinor,gstMode:'INTRA'})});const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Unable to create draft.');id=data.draft.id;setDraftId(id)}const response=await fetch(`/api/invoices/draft/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gstMode:'INTRA'})});const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Unable to finalize invoice.');const finalizedId=String(data.invoice.id);const finalizedNumber=String(data.invoice.invoiceNumber);const finalizedTotal=Number(data.invoice.grandTotalMinor??estimatedGrandTotal);const finalizedUnits=items.reduce((n,item)=>n+item.qty,0);setSavedInvoice(finalizedNumber);setCompletion({id:finalizedId,invoiceNumber:finalizedNumber,customerName:selectedCustomer.name,units:finalizedUnits,totalMinor:finalizedTotal});setDraftStatus('Invoice finalized and stored in cloud');setDraftId(null)}catch(err){setError(err instanceof Error?err.message:'Unable to finalize invoice.');setDraftStatus('Invoice not finalized')}finally{setFinalizing(false)}}
- return <main className="invoice-workspace"><header className="invoice-topbar"><div><small>AISWARYA FOOD PRODUCTS · COUNTER</small><h1>New Customer Bill</h1><p>Choose the customer, tap products from the shelf, adjust the basket and finalize.</p></div><div className="invoice-top-actions"><span className={`local-status ${online?'good':'warning'}`}>{online?'ONLINE · BILLING READY':'CONNECTION LOST · BILLING UNAVAILABLE'}</span><span className={`draft-status ${draftStatus.includes('saved')||draftStatus.includes('loaded')||draftStatus.includes('finalized')||draftStatus.includes('created')?'good':''}`}>{draftStatus||'Ready'}</span></div></header>
- <div className="invoice-grid"><div className="invoice-main"><section className="invoice-card counter-customer"><div className="invoice-section-title"><b>01</b><div><h2>Customer</h2><p>Search by name, phone, code or GSTIN.</p></div></div><label htmlFor="customer">Customer</label><input id="customer" disabled={!online} value={selectedCustomer?selectedCustomer.name:customerQuery} onChange={e=>{setSelectedCustomer(null);setCustomerQuery(e.target.value);setSavedInvoice(null);setError(null)}} placeholder={online?'Start typing customer name…':'Connection required'} autoComplete="off"/>{!selectedCustomer&&customerQuery&&online&&<div className="product-results">{loadingCustomers?<div className="table-empty">Searching customers…</div>:customerResults.length?customerResults.map(customer=><button key={customer.id} onClick={()=>{setSelectedCustomer(customer);setCustomerQuery('');setSavedInvoice(null)}}><span className="result-avatar">{customer.photoUrl?<img src={customer.photoUrl} alt=""/>:<span>{customer.name.slice(0,1).toUpperCase()}</span>}</span><span><strong>{customer.name}</strong><span>{customer.code} · {customer.phone||'No phone'} · {customer.city||'No city'}</span></span></button>):<div className="table-empty">No customer found.</div>}</div>}{selectedCustomer&&<div className="customer-selected"><span className="selected-avatar">{selectedCustomer.photoUrl?<img src={selectedCustomer.photoUrl} alt=""/>:<span>{selectedCustomer.name.slice(0,1).toUpperCase()}</span>}</span><span><strong>{selectedCustomer.name}</strong><span>{selectedCustomer.code} · {selectedCustomer.phone||'No phone'} · {selectedCustomer.city||'No city'} · GSTIN {selectedCustomer.gstin||'Not provided'}</span></span></div>}</section>
- <section className="invoice-card counter-products"><div className="invoice-section-title"><b>02</b><div><h2>Product Shelf</h2><p>Tap a biscuit to put it into the basket. Use search when you know the code.</p></div></div><div className="product-entry-row"><div className="counter-search"><label htmlFor="product">Find a product</label><input id="product" disabled={!online} value={productQuery} onChange={e=>{setProductQuery(e.target.value);setError(null)}} placeholder={online?'Search product, code or HSN…':'Connection required'} autoComplete="off"/></div><div className="product-quick-add"><button type="button" disabled={!online} onClick={()=>setShowQuickProduct(true)}>＋ Quick add</button><Link href="/products">Edit catalogue</Link></div></div>{productQuery&&online&&<div className="product-results">{loadingProducts?<div className="table-empty">Searching products…</div>:productResults.length?productResults.map(product=><button key={product.id} onClick={()=>addItem(product)}><span className="result-avatar square">{product.imageUrl?<img src={product.imageUrl} alt=""/>:<span>BP</span>}</span><span><strong>{product.name}</strong><span>{product.code} · {product.packSize||'—'} · {money(product.rateMinor)} / {product.unit}</span></span></button>):<div className="table-empty">No product found. Use Quick add.</div>}</div>}{!productQuery&&<><div className="counter-categories">{categories.map(c=><button key={c} className={category===c?'active':''} onClick={()=>setCategory(c)}>{c}</button>)}</div><div className="product-shelf-grid">{shelfProducts.map(product=><button className="shelf-tile" key={product.id} onClick={()=>addItem(product)} disabled={!online}>{product.imageUrl?<span className="shelf-photo"><img src={product.imageUrl} alt=""/></span>:<span className="shelf-tile-pack">{product.packSize||'PACK'}</span>}<strong>{product.name}</strong><small>{product.code} · {money(product.rateMinor)}</small><b>＋ Add</b></button>)}{!shelfProducts.length&&<div className="table-empty">No products in this category yet. Add one from the catalogue.</div>}</div></>}
- <div className="basket-head"><strong>Basket</strong><span>{items.reduce((n,item)=>n+item.qty,0)} units · {items.length} products</span></div><div className="invoice-table"><div className="table-head"><span>Product</span><span>Pack</span><span>Qty</span><span>Rate</span><span>Amount</span><span/></div>{items.length===0?<div className="table-empty">Your basket is empty. Tap a product above to add it.</div>:items.map(item=><div className="table-row" key={item.id}><div><strong>{item.name}</strong><small>{item.code} · GST {(item.gstRateBps/100).toFixed(2)}%</small></div><span>{item.packSize||'—'}</span><input aria-label={`Quantity for ${item.name}`} type="number" min="1" value={item.qty} onChange={e=>updateQuantity(item.id,e.target.value)}/><span>{money(item.rateMinor)}</span><strong>{money(item.rateMinor*item.qty)}</strong><button className="remove-button" onClick={()=>removeItem(item.id)}>Remove</button></div>)}</div></section>
- </div><aside className="invoice-summary invoice-card"><div className="invoice-section-title"><b>03</b><div><h2>Checkout</h2><p>Review the basket before committing the bill.</p></div></div><div className="checkout-customer">{selectedCustomer?<><small>SELLING TO</small><strong>{selectedCustomer.name}</strong><span>{selectedCustomer.code}</span></>:<span>Select a customer first.</span>}</div><div className="summary-line"><span>Products</span><strong>{items.length}</strong></div><div className="summary-line"><span>Units</span><strong>{items.reduce((n,item)=>n+item.qty,0)}</strong></div><div className="summary-line"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="summary-line"><label htmlFor="discount">Discount (₹)</label><input id="discount" disabled={!online} type="number" min="0" value={discount} onChange={e=>{setDiscount(Math.max(0,Number(e.target.value)||0));setSavedInvoice(null)}}/></div><div className="summary-line"><span>Taxable value</span><strong>{money(taxable)}</strong></div><div className="summary-line"><span>Estimated GST</span><strong>{money(estimatedTax)}</strong></div><div className="grand"><span>Customer Total</span><strong>{money(estimatedGrandTotal)}</strong></div><small className="summary-note">Final GST and total are recalculated and validated on the server.</small>{error&&<div className="save-error" role="alert"><strong>Attention</strong><span>{error}</span></div>}{savedInvoice&&<div className="save-success" role="status"><strong>Bill finalized</strong><span>{savedInvoice} · Stored in the company ledger.</span></div>}<button className="save-button" disabled={!online||!selectedCustomer||items.length===0||finalizing} onClick={savedInvoice?clearInvoice:finalize}>{finalizing?'Finalizing…':savedInvoice?'Start New Bill':online?'Finalize & Save Bill':'Billing unavailable while offline'}</button><button className="clear-button" onClick={clearInvoice}>Clear Counter</button></aside></div>{showQuickProduct&&online&&<QuickProductModal onClose={()=>setShowQuickProduct(false)} onCreated={addCreatedProduct}/>} {completion&&<ReceiptCompletion invoiceId={completion.id} invoiceNumber={completion.invoiceNumber} customerName={completion.customerName} units={completion.units} totalMinor={completion.totalMinor} onNewBill={clearInvoice}/>}</main>
+const money = (minor: number) => `₹${(minor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const quantityLabel = (value: number) => Math.max(1, Math.floor(value || 1)).toLocaleString('en-IN')
+
+function QuantityControl({ item, onChange }: { item: LineItem; onChange: (id: string, value: string) => void }) {
+  const [draft, setDraft] = useState(String(item.qty))
+  const [editing, setEditing] = useState(false)
+
+  useEffect(() => {
+    if (!editing) setDraft(String(item.qty))
+  }, [item.qty, editing])
+
+  const commit = (value: string) => {
+    const digits = value.replace(/\D/g, '')
+    const next = Math.max(1, Number(digits) || 1)
+    setDraft(String(next))
+    onChange(item.id, String(next))
+  }
+
+  return (
+    <div className="quantity-control" aria-label={`Quantity for ${item.name}`}>
+      <button type="button" aria-label={`Decrease ${item.name} quantity`} onClick={() => commit(String(item.qty - 1))} disabled={item.qty <= 1}>−</button>
+      <input
+        aria-label={`Quantity for ${item.name}`}
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={editing ? draft : quantityLabel(item.qty)}
+        onFocus={(event) => {
+          setEditing(true)
+          setDraft(String(item.qty))
+          window.requestAnimationFrame(() => event.currentTarget.select())
+        }}
+        onChange={(event) => {
+          const digits = event.target.value.replace(/\D/g, '')
+          setDraft(digits)
+          if (digits) onChange(item.id, digits)
+        }}
+        onBlur={() => {
+          setEditing(false)
+          commit(draft)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur()
+          if (event.key === 'Escape') {
+            setEditing(false)
+            setDraft(String(item.qty))
+            event.currentTarget.blur()
+          }
+        }}
+      />
+      <button type="button" aria-label={`Increase ${item.name} quantity`} onClick={() => commit(String(item.qty + 1))}>+</button>
+    </div>
+  )
+}
+
+export default function InvoiceWorkspace() {
+  const [online, setOnline] = useState(true), [customerQuery, setCustomerQuery] = useState(''), [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null), [productQuery, setProductQuery] = useState(''), [items, setItems] = useState<LineItem[]>([]), [discount, setDiscount] = useState(0), [customerResults, setCustomerResults] = useState<Customer[]>([]), [productResults, setProductResults] = useState<Product[]>([]), [catalogue, setCatalogue] = useState<Product[]>([]), [category, setCategory] = useState('All'), [loadingCustomers, setLoadingCustomers] = useState(false), [loadingProducts, setLoadingProducts] = useState(false), [saving, setSaving] = useState(false), [finalizing, setFinalizing] = useState(false), [draftId, setDraftId] = useState<string | null>(null), [draftStatus, setDraftStatus] = useState(''), [savedInvoice, setSavedInvoice] = useState<string | null>(null), [completion, setCompletion] = useState<Completion | null>(null), [error, setError] = useState<string | null>(null), [showQuickProduct, setShowQuickProduct] = useState(false)
+
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine)
+    sync(); window.addEventListener('online', sync); window.addEventListener('offline', sync)
+    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync) }
+  }, [])
+
+  useEffect(() => {
+    if (!online) return
+    fetch('/api/products', { cache: 'no-store' }).then(r => r.json()).then(d => setCatalogue(d.products ?? [])).catch(() => {})
+  }, [online])
+
+  useEffect(() => {
+    let cancelled = false
+    async function restoreCloudDraft() {
+      if (!navigator.onLine) return
+      try {
+        const response = await fetch('/api/invoices/drafts', { cache: 'no-store' })
+        const data = await response.json()
+        const latest = data.drafts?.[0]
+        if (!cancelled && latest?.id) {
+          const detailResponse = await fetch(`/api/invoices/${latest.id}`, { cache: 'no-store' })
+          const detail = await detailResponse.json()
+          if (detail.ok && detail.invoice?.status === 'DRAFT') {
+            const customer: Customer = { id: String(detail.invoice.customer_id), name: String(detail.invoice.customer_name), code: String(detail.invoice.customer_code), phone: detail.invoice.customer_phone ?? null, city: detail.invoice.customer_city ?? null, gstin: detail.invoice.customer_gstin ?? null }
+            const restoredItems: LineItem[] = (detail.items ?? []).map((item: Record<string, unknown>) => ({ id: String(item.product_id ?? item.id), name: String(item.product_name), code: String(item.product_code), category: '', packSize: item.pack_size ? String(item.pack_size) : null, unit: String(item.unit), rateMinor: Number(item.rate_minor), gstRateBps: Number(item.gst_rate_bps), hsnCode: item.hsn_code ? String(item.hsn_code) : null, qty: Math.max(1, Number(item.quantity) || 1) }))
+            setSelectedCustomer(customer); setItems(restoredItems); setDiscount(Number(detail.invoice.discount_minor ?? 0) / 100); setDraftId(latest.id); setDraftStatus('Cloud draft loaded')
+          }
+        }
+      } catch { if (!cancelled) setDraftStatus('Ready') }
+    }
+    void restoreCloudDraft(); return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!customerQuery.trim() || !online) { setCustomerResults([]); return }
+    const timer = window.setTimeout(async () => {
+      setLoadingCustomers(true)
+      try { const response = await fetch(`/api/customers?q=${encodeURIComponent(customerQuery)}`); const data = await response.json(); setCustomerResults(data.customers ?? []) }
+      catch { setError('Could not load customers. Check the connection.') }
+      finally { setLoadingCustomers(false) }
+    }, 180)
+    return () => window.clearTimeout(timer)
+  }, [customerQuery, online])
+
+  useEffect(() => {
+    if (!productQuery.trim() || !online) { setProductResults([]); return }
+    const timer = window.setTimeout(async () => {
+      setLoadingProducts(true)
+      try { const response = await fetch(`/api/products?q=${encodeURIComponent(productQuery)}`); const data = await response.json(); setProductResults(data.products ?? []) }
+      catch { setError('Could not load products. Check the connection.') }
+      finally { setLoadingProducts(false) }
+    }, 180)
+    return () => window.clearTimeout(timer)
+  }, [productQuery, online])
+
+  const categories = useMemo(() => ['All', ...Array.from(new Set(catalogue.map(p => p.category).filter(Boolean)))], [catalogue])
+  const shelfProducts = useMemo(() => catalogue.filter(p => category === 'All' || p.category === category).slice(0, 24), [catalogue, category])
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.rateMinor * item.qty, 0), [items])
+  const discountMinor = Math.round(Math.max(0, discount) * 100)
+  const taxable = Math.max(0, subtotal - Math.min(subtotal, discountMinor))
+  const estimatedTax = useMemo(() => {
+    if (!items.length || taxable <= 0) return 0
+    const baseSubtotal = Math.max(1, subtotal)
+    return Math.round(items.reduce((sum, item) => sum + Math.max(0, item.rateMinor * item.qty - Math.round(discountMinor * (item.rateMinor * item.qty) / baseSubtotal)) * item.gstRateBps / 10000, 0))
+  }, [items, subtotal, taxable, discountMinor])
+  const estimatedGrandTotal = taxable + estimatedTax
+  const totalUnits = items.reduce((n, item) => n + item.qty, 0)
+
+  useEffect(() => {
+    if (!selectedCustomer || items.length === 0 || savedInvoice || completion || !online || saving || finalizing) return
+    const timer = window.setTimeout(() => { void autosaveDraft() }, 900)
+    setDraftStatus('Unsaved changes')
+    return () => window.clearTimeout(timer)
+  }, [selectedCustomer, items, discount, online, savedInvoice, completion])
+
+  async function autosaveDraft() {
+    if (!online || !selectedCustomer || items.length === 0 || saving || finalizing) return
+    setSaving(true); setDraftStatus('Saving draft…'); setError(null)
+    try {
+      const response = await fetch('/api/invoices/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId ?? undefined, customerId: selectedCustomer.id, items: items.map(item => ({ productId: item.id, quantity: item.qty, rateMinor: item.rateMinor })), discountMinor, gstMode: 'INTRA' }) })
+      const data = await response.json()
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to save draft.')
+      setDraftId(data.draft.id); setDraftStatus('Draft saved to cloud')
+    } catch (err) { setDraftStatus('Draft not saved'); setError(err instanceof Error ? err.message : 'Unable to save draft.') }
+    finally { setSaving(false) }
+  }
+
+  const addItem = (product: Product) => { setItems(current => current.some(item => item.id === product.id) ? current.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item) : [...current, { ...product, qty: 1 }]); setProductQuery(''); setSavedInvoice(null); setError(null) }
+  const updateQuantity = (id: string, value: string) => { setItems(current => current.map(item => item.id === id ? { ...item, qty: Math.max(1, Number(value) || 1) } : item)); setSavedInvoice(null) }
+  const removeItem = (id: string) => { setItems(current => current.filter(item => item.id !== id)); setSavedInvoice(null) }
+  const clearInvoice = () => { setSelectedCustomer(null); setCustomerQuery(''); setProductQuery(''); setItems([]); setDiscount(0); setDraftId(null); setSavedInvoice(null); setCompletion(null); setDraftStatus(''); setError(null) }
+  const addCreatedProduct = (product: Product) => { addItem(product); setShowQuickProduct(false); setDraftStatus('Product created and added') }
+
+  const finalize = async () => {
+    if (!online) { setError('Internet connection is required to finalize an invoice.'); setDraftStatus('Billing unavailable'); return }
+    if (!selectedCustomer || items.length === 0 || finalizing) return
+    setFinalizing(true); setError(null); setDraftStatus('Finalizing…')
+    try {
+      let id = draftId
+      if (!id) {
+        const response = await fetch('/api/invoices/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customerId: selectedCustomer.id, items: items.map(item => ({ productId: item.id, quantity: item.qty, rateMinor: item.rateMinor })), discountMinor, gstMode: 'INTRA' }) })
+        const data = await response.json(); if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to create draft.'); id = data.draft.id; setDraftId(id)
+      }
+      const response = await fetch(`/api/invoices/draft/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gstMode: 'INTRA' }) })
+      const data = await response.json(); if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to finalize invoice.')
+      const finalizedId = String(data.invoice.id), finalizedNumber = String(data.invoice.invoiceNumber), finalizedTotal = Number(data.invoice.grandTotalMinor ?? estimatedGrandTotal)
+      setSavedInvoice(finalizedNumber); setCompletion({ id: finalizedId, invoiceNumber: finalizedNumber, customerName: selectedCustomer.name, units: totalUnits, totalMinor: finalizedTotal }); setDraftStatus('Invoice finalized and stored in cloud'); setDraftId(null)
+    } catch (err) { setError(err instanceof Error ? err.message : 'Unable to finalize invoice.'); setDraftStatus('Invoice not finalized') }
+    finally { setFinalizing(false) }
+  }
+
+  return <main className="invoice-workspace">
+    <header className="invoice-topbar">
+      <div><small>AISWARYA FOOD PRODUCTS · COUNTER</small><h1>New Bill</h1><p>Select a customer, add products, adjust quantities and finalize.</p></div>
+      <div className="invoice-top-actions"><span className={`local-status ${online ? 'good' : 'warning'}`}>{online ? 'ONLINE · BILLING READY' : 'CONNECTION LOST · BILLING UNAVAILABLE'}</span><span className={`draft-status ${draftStatus.includes('saved') || draftStatus.includes('loaded') || draftStatus.includes('finalized') || draftStatus.includes('created') ? 'good' : ''}`}>{draftStatus || 'Ready'}</span></div>
+    </header>
+
+    <div className="invoice-grid">
+      <div className="invoice-main">
+        <section className="invoice-card counter-customer">
+          <div className="invoice-section-title"><b>01</b><div><h2>Customer</h2><p>Search by name, phone, code or GSTIN.</p></div></div>
+          <label htmlFor="customer">Customer</label>
+          <input id="customer" disabled={!online} value={selectedCustomer ? selectedCustomer.name : customerQuery} onChange={e => { setSelectedCustomer(null); setCustomerQuery(e.target.value); setSavedInvoice(null); setError(null) }} placeholder={online ? 'Search customer…' : 'Connection required'} autoComplete="off" />
+          {!selectedCustomer && customerQuery && online && <div className="product-results">{loadingCustomers ? <div className="table-empty">Searching customers…</div> : customerResults.length ? customerResults.map(customer => <button key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerQuery(''); setSavedInvoice(null) }}><span className="result-avatar">{customer.photoUrl ? <img src={customer.photoUrl} alt="" /> : <span>{customer.name.slice(0, 1).toUpperCase()}</span>}</span><span><strong>{customer.name}</strong><span>{customer.code} · {customer.phone || 'No phone'} · {customer.city || 'No city'}</span></span></button>) : <div className="table-empty">No customer found. Try another name or code.</div>}</div>}
+          {selectedCustomer && <div className="customer-selected"><span className="selected-avatar">{selectedCustomer.photoUrl ? <img src={selectedCustomer.photoUrl} alt="" /> : <span>{selectedCustomer.name.slice(0, 1).toUpperCase()}</span>}</span><span><strong>{selectedCustomer.name}</strong><span>{selectedCustomer.code} · {selectedCustomer.phone || 'No phone'} · {selectedCustomer.city || 'No city'} · GSTIN {selectedCustomer.gstin || 'Not provided'}</span></span></div>}
+        </section>
+
+        <section className="invoice-card counter-products">
+          <div className="invoice-section-title"><b>02</b><div><h2>Products</h2><p>Add products to the bill. Search by name, code or HSN.</p></div></div>
+          <div className="product-entry-row"><div className="counter-search"><label htmlFor="product">Find a product</label><input id="product" disabled={!online} value={productQuery} onChange={e => { setProductQuery(e.target.value); setError(null) }} placeholder={online ? 'Search product, code or HSN…' : 'Connection required'} autoComplete="off" /></div><div className="product-quick-add"><button type="button" disabled={!online} onClick={() => setShowQuickProduct(true)}>＋ Add product</button><Link href="/products">Manage catalogue</Link></div></div>
+          {productQuery && online && <div className="product-results">{loadingProducts ? <div className="table-empty">Searching products…</div> : productResults.length ? productResults.map(product => <button key={product.id} onClick={() => addItem(product)}><span className="result-avatar square">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <span>BP</span>}</span><span><strong>{product.name}</strong><span>{product.code} · {product.packSize || '—'} · {money(product.rateMinor)} / {product.unit}</span></span></button>) : <div className="table-empty">No product found. Add it to the catalogue if it is new.</div>}</div>}
+          {!productQuery && <><div className="counter-categories">{categories.map(c => <button key={c} className={category === c ? 'active' : ''} onClick={() => setCategory(c)}>{c}</button>)}</div><div className="product-shelf-grid">{shelfProducts.map(product => <button className="shelf-tile" key={product.id} onClick={() => addItem(product)} disabled={!online}>{product.imageUrl ? <span className="shelf-photo"><img src={product.imageUrl} alt="" /></span> : <span className="shelf-tile-pack">{product.packSize || 'PACK'}</span>}<strong>{product.name}</strong><small>{product.code} · {money(product.rateMinor)}</small><b>＋ Add</b></button>)}{!shelfProducts.length && <div className="table-empty">No products in this category yet. Add one from the catalogue.</div>}</div></>}
+
+          <div className="basket-head"><strong>Basket</strong><span>{totalUnits.toLocaleString('en-IN')} units · {items.length} products</span></div>
+          <div className="invoice-table">
+            <div className="table-head"><span>Product</span><span>Pack</span><span>Qty</span><span>Rate</span><span>Amount</span><span /></div>
+            {items.length === 0 ? <div className="table-empty">Your basket is empty. Add a product above to get started.</div> : items.map(item => <div className="table-row" key={item.id}><div><strong>{item.name}</strong><small>{item.code} · GST {(item.gstRateBps / 100).toFixed(2)}%</small></div><span>{item.packSize || '—'}</span><QuantityControl item={item} onChange={updateQuantity} /><span>{money(item.rateMinor)}</span><strong className="amount-cell">{money(item.rateMinor * item.qty)}</strong><button className="remove-button" onClick={() => removeItem(item.id)}>Remove</button></div>)}
+          </div>
+        </section>
+      </div>
+
+      <aside className="invoice-summary invoice-card">
+        <div className="invoice-section-title"><b>03</b><div><h2>Checkout</h2><p>Review the bill before finalizing.</p></div></div>
+        <div className="checkout-customer">{selectedCustomer ? <><small>BILLING TO</small><strong>{selectedCustomer.name}</strong><span>{selectedCustomer.code}</span></> : <span>Select a customer to continue.</span>}</div>
+        <div className="summary-line"><span>Products</span><strong>{items.length}</strong></div>
+        <div className="summary-line"><span>Units</span><strong>{totalUnits.toLocaleString('en-IN')}</strong></div>
+        <div className="summary-line"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+        <div className="summary-line"><label htmlFor="discount">Discount</label><div className="money-input"><span>₹</span><input id="discount" disabled={!online} type="number" min="0" step="0.01" value={discount} onChange={e => { setDiscount(Math.max(0, Number(e.target.value) || 0)); setSavedInvoice(null) }} /></div></div>
+        <div className="summary-line"><span>Taxable value</span><strong>{money(taxable)}</strong></div>
+        <div className="summary-line"><span>Estimated GST</span><strong>{money(estimatedTax)}</strong></div>
+        <div className="grand"><span>Amount due</span><strong>{money(estimatedGrandTotal)}</strong></div>
+        <small className="summary-note">GST and the final total are recalculated and validated on the server.</small>
+        {error && <div className="save-error" role="alert"><strong>Attention</strong><span>{error}</span></div>}
+        {savedInvoice && <div className="save-success" role="status"><strong>Bill finalized</strong><span>{savedInvoice} · Stored in the company ledger.</span></div>}
+        <button className="save-button" disabled={!online || !selectedCustomer || items.length === 0 || finalizing} onClick={savedInvoice ? clearInvoice : finalize}>{finalizing ? 'Finalizing…' : savedInvoice ? 'Start New Bill' : online ? 'Finalize Bill' : 'Billing unavailable while offline'}</button>
+        <button className="clear-button" onClick={clearInvoice}>Clear Bill</button>
+      </aside>
+    </div>
+
+    {showQuickProduct && online && <QuickProductModal onClose={() => setShowQuickProduct(false)} onCreated={addCreatedProduct} />}
+    {completion && <ReceiptCompletion invoiceId={completion.id} invoiceNumber={completion.invoiceNumber} customerName={completion.customerName} units={completion.units} totalMinor={completion.totalMinor} onNewBill={clearInvoice} />}
+  </main>
 }
