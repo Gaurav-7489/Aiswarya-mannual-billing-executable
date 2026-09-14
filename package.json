@@ -1,9 +1,9 @@
 {
   "name": "aiswarya-billing",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Production billing and sales management system for Aiswarya Food Products",
   "scripts": {"dev":"next dev","build":"next build","start":"next start","lint":"next lint","typecheck":"tsc --noEmit","test:e2e":"playwright test"},
-  "dependencies": {"next":"16.3.4","react":"19.1.0","react-dom":"19.1.0"},
+  "dependencies": {"next":"16.3.4","react":"19.1.0","react-dom":"19.1.0","three":"^0.186.0"},
   "devDependencies": {"@playwright/test":"^1.63.0","@types/node":"^22","@types/react":"^19","@types/react-dom":"^19","typescript":"^5"}
 }
